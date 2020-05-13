@@ -1,4 +1,10 @@
 numpy
 pandas
 scipy
+gunicorn
+Flask
+Jinja2
+Werkzeug
+distribute
+wsgiref
 
