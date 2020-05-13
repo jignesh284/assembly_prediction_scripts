@@ -15,7 +15,7 @@ def do_GET():
     result = robot.predict(sequence)
     print(result)
 
-    return jsonify({"next": sequence})
+    return jsonify({"next": result[0]})
         
 
 if __name__ == "__main__":
