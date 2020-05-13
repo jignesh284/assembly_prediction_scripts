@@ -1,0 +1,6 @@
+name: dash_app #Environment name
+dependencies:
+  - python=3.6
+  - pip:
+    - flask
+  
