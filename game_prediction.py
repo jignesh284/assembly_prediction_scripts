@@ -4,13 +4,6 @@ from itertools import permutations
 from scipy import stats
 from scipy.cluster.hierarchy import linkage, fcluster
 import scipy.spatial.distance as ssd
-from datetime import datetime
-
-
-#initializes the class and return the function
-def initRobot():
-    # r = Robot()
-    return 10
 
 
 # Assembly connection information
@@ -126,6 +119,39 @@ def event_length(event):
     return int(''.join(filter(lambda i: i.isdigit(), event)))
 
 
+# Calculate cluster dispersion score
+def calinski_harabasz_score(dist_matrix, k, labels):
+    n_data = len(dist_matrix)
+    C = float('inf')
+    for x in range(len(labels)):
+        avg_dist = np.mean(dist_matrix[x][:])
+        if avg_dist < C:
+            C = avg_dist
+            C_user = x
+
+    W_k, B_k = 0, 0
+    for q in range(1, k+1):
+        q_users = [i for i, l in enumerate(labels) if l == q]
+        n_q = len(q_users)
+        C_q = float('inf')
+        for x in q_users:
+            avg_dist = np.mean([dist_matrix[x][u] for u in q_users])
+            if avg_dist < C_q:
+                C_q = avg_dist
+                Cq_user = x
+
+        w_k = 0
+        for x in q_users:
+            w_k = w_k + (dist_matrix[x][Cq_user])**2
+        W_k = W_k + w_k
+
+        B_k = B_k + (n_q*(dist_matrix[C_user][Cq_user])**2)
+
+    ch_score = (B_k / W_k) * ((n_data-k) / (k-1))
+
+    return ch_score
+
+
 class Robot:
     def __init__(self):
         """
@@ -178,8 +204,16 @@ class Robot:
         dist = distance_matrix(self.procedures)
         dist_array = ssd.squareform(dist)
         f_link = linkage(dist_array)
-        cluster_threshold = 1
-        self.procedure_clusters = list(fcluster(f_link, cluster_threshold, criterion='distance'))
+        dispersion_score = 0
+        for cluster_threshold in range(int(max(dist_array))):
+            procedure_clusters = list(fcluster(f_link, cluster_threshold, criterion='distance'))
+            k = len(set(procedure_clusters))
+            if k > 1:
+                ch_score = calinski_harabasz_score(dist, k, procedure_clusters)
+                if ch_score > dispersion_score:
+                    dispersion_score = ch_score
+                    optimal_cluster_threshold = cluster_threshold
+        self.procedure_clusters = list(fcluster(f_link, optimal_cluster_threshold, criterion='distance'))
         self.dominant_clusters = [label for label in set(self.procedure_clusters) if
                                   self.procedure_clusters.count(label) >= 2]
 
@@ -223,7 +257,16 @@ class Robot:
                 dist = distance_matrix(self.secondary_event_data[str(dc)][event])
                 dist_array = ssd.squareform(dist)
                 f_link = linkage(dist_array)
-                event_clusters = fcluster(f_link, 2, criterion='distance')
+                dispersion_score = 0
+                for cluster_threshold in range(int(max(dist_array))):
+                    event_clusters = list(fcluster(f_link, cluster_threshold, criterion='distance'))
+                    k = len(set(event_clusters))
+                    if k > 1:
+                        ch_score = calinski_harabasz_score(dist, k, event_clusters)
+                        if ch_score > dispersion_score:
+                            dispersion_score = ch_score
+                            optimal_cluster_threshold = cluster_threshold
+                event_clusters = fcluster(f_link, optimal_cluster_threshold, criterion='distance')
                 self.dom_event_clusters[str(dc)][event] = event_clusters
 
     def predict(self, action_subseq):
@@ -300,7 +343,7 @@ class Robot:
         # Use robot prediction only if the confidence is above 75%
         confidence_threshold = 0.75
         if final_prob > confidence_threshold:
-            print("Prediction probability:", final_prob)
+            print "Prediction probability:", final_prob
 
             # If the last event in sub-sequence is still ongoing
             if event_length(curr_event) < event_length(final_proc[-1]):
@@ -328,14 +371,14 @@ class Robot:
                     prob_sum = prob_sum + prob
                     probs[str(dc)] = prob
 
-                    # Normalization
-                    for dc in probs:
-                        prob = probs[dc] / prob_sum
+                # Normalization
+                for dc in probs:
+                    prob = probs[dc] / prob_sum
 
-                        # Select the match with maximum probability
-                        if prob >= max_prob:
-                            max_prob = prob
-                            event_pref = dc
+                    # Select the match with maximum probability
+                    if prob >= max_prob:
+                        max_prob = prob
+                        event_pref = dc
 
                 # The most common action sequence in the event cluster
                 pred_users = [i for i, label in enumerate(possible_event_clusters) if
@@ -356,7 +399,7 @@ class Robot:
             prediction = [part[1:3] for part in pred_actions]
             # prediction = [a for a in pred_actions if a not in action_subseq]
 
-            print("Predicted response:")
+            print "Predicted response:"
             return prediction
         else:
             return [None]
@@ -369,11 +412,13 @@ class Robot:
         :return: List of actions. 'lr' - large column, 'sm' - small column, 'sf' - shelf, 'wa' - wait.
         """
         action_seq = self.primary_plans[user][:timestep]
-        print("Actual response:", self.secondary_plans[user][timestep])
+        print "Actual response:", self.secondary_plans[user][timestep]
 
         return self.predict(action_seq)
 
 
+# Test Code
+# r = Robot()
+# print r.predict(['lr_right', 'sm_right', 'cr'])#, 'lr_left', 'sm_left', 'cl', 'sf1', 's1l', 'sf2', 's2l', 'sf3', 's3l', 'sf4', 's4l', 'sf5', 's5l'])
 
-
-
+# print "Done"
