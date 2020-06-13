@@ -343,7 +343,7 @@ class Robot:
         # Use robot prediction only if the confidence is above 75%
         confidence_threshold = 0.75
         if final_prob > confidence_threshold:
-            print "Prediction probability:", final_prob
+            print("Prediction probability:", final_prob)
 
             # If the last event in sub-sequence is still ongoing
             if event_length(curr_event) < event_length(final_proc[-1]):
@@ -399,7 +399,7 @@ class Robot:
             prediction = [part[1:3] for part in pred_actions]
             # prediction = [a for a in pred_actions if a not in action_subseq]
 
-            print "Predicted response:"
+            print("Predicted response:")
             return prediction
         else:
             return [None]
@@ -412,7 +412,7 @@ class Robot:
         :return: List of actions. 'lr' - large column, 'sm' - small column, 'sf' - shelf, 'wa' - wait.
         """
         action_seq = self.primary_plans[user][:timestep]
-        print "Actual response:", self.secondary_plans[user][timestep]
+        print("Actual response:", self.secondary_plans[user][timestep])
 
         return self.predict(action_seq)
 
