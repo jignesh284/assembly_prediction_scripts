@@ -1,9 +1,9 @@
 import os
 from flask import Flask, jsonify, request
-import game_prediction
+import algorithm
 
 
-robot = game_prediction.Robot()
+robot = algorithm.Robot()
 app = Flask(__name__)
 
 #textapi http://127.0.0.1:7500/?sequence[]=sm_right&sequence[]=lr_right&sequence[]=cr
