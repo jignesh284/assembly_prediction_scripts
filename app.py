@@ -24,7 +24,7 @@ def do_GET():
         result = mainline.predict(sequence)
     
     print(result)
-    return jsonify({"next": result})
+    return jsonify({"next": result, "algo": algo})
 
 if __name__ == "__main__":
     PORT = int(os.environ.get("PORT", 8080))
